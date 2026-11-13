@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
 
@@ -9,6 +10,13 @@ class Dispositivo(BaseModel):
     tipo: str
     ip: str
     activo: bool = True
+
+
+class DispositivoParcial(BaseModel):
+    nombre: str | None = None
+    tipo: str | None = None
+    ip: str | None = None
+    activo: bool | None = None
 
 
 inventario = [
@@ -41,5 +49,46 @@ async def obtener(nombre: str):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No existe el equipo {nombre}",
         )
+
+    return equipo
+
+
+@app.put("/dispositivos/{nombre}")
+async def reemplazar(nombre: str, datos: Dispositivo):
+    equipo = buscar(nombre)
+
+    if equipo is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No existe el equipo {nombre}",
+        )
+
+    if datos.nombre.upper() != nombre.upper():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="El nombre del dispositivo no puede cambiar",
+        )
+
+    indice = inventario.index(equipo)
+    inventario[indice] = datos
+
+    return datos
+
+
+@app.patch("/dispositivos/{nombre}")
+async def actualizar(nombre: str, datos: DispositivoParcial):
+    equipo = buscar(nombre)
+
+    if equipo is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No existe el equipo {nombre}",
+        )
+
+    cambios = datos.model_dump(exclude_unset=True)
+
+    for campo, valor in cambios.items():
+        if valor is not None:
+            setattr(equipo, campo, valor)
 
     return equipo
