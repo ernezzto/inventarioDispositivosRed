@@ -43,3 +43,15 @@ async def obtener(nombre: str):
         )
 
     return equipo
+
+
+@app.post("/dispositivos", status_code=status.HTTP_201_CREATED)
+async def crear(equipo: Dispositivo):
+    if buscar(equipo.nombre) is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Ya existe el equipo {equipo.nombre}",
+        )
+
+    inventario.append(equipo)
+    return equipo
